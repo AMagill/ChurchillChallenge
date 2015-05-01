@@ -5,3 +5,5 @@
 *.v12.suo
 *.vcxproj.filters
 *.txt
+/Release/
+/.vs/
