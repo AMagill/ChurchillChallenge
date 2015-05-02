@@ -24,14 +24,6 @@ void QuadTree::Load(const Point* points_begin, const Point* points_end)
     if (pt.y < bounds.ly) bounds.ly = pt.y;
     if (pt.y > bounds.hy) bounds.hy = pt.y;
   });
-  /*
-  for (auto pt = points_begin; pt <= points_end; pt++)
-  {
-    if (pt->x < bounds.lx) bounds.lx = pt->x;
-    if (pt->x > bounds.hx) bounds.hx = pt->x;
-    if (pt->y < bounds.ly) bounds.ly = pt->y;
-    if (pt->y > bounds.hy) bounds.hy = pt->y;
-  }*/
 
   // Initialize the root node
   root = new QuadNode(bounds);
@@ -49,6 +41,12 @@ QuadTree::~QuadTree()
 {
   delete root;
 }
+
+int32_t QuadTree::Search(const Rect rect, const int32_t count, Point* out_points)
+{
+  return root->Search(rect, count, out_points);
+}
+
 
 QuadNode::QuadNode(Rect inBounds)
 {
@@ -123,4 +121,21 @@ int QuadNode::Count()
     child[1]->Count() +
     child[2]->Count() +
     child[3]->Count();
+}
+
+void QuadNode::Sort()
+{
+
+}
+
+std::vector<Point> QuadNode::Search(const Rect rect, const int32_t count)
+{
+  if (points)
+  {
+
+  }
+  else
+  {
+
+  }
 }

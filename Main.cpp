@@ -35,17 +35,17 @@ EXPORT int32_t search(SearchContext* sc, const Rect rect, const int32_t count, P
   if (sc == nullptr)
     return 0;
 
-  return 0;
+  return sc->tree->Search(rect, count, out_points);
 }
 
 /* Release the resources associated with the context. Return nullptr if successful, "sc" otherwise. */
 EXPORT SearchContext* destroy(SearchContext* sc)
 {
-  if (sc == nullptr)
-    return nullptr;
-
-  delete sc->tree;
-  delete sc;
+  if (sc)
+  {
+    delete sc->tree;
+    delete sc;
+  }
 
   return nullptr;
 }

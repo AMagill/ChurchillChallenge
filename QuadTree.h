@@ -23,6 +23,7 @@ public:
   QuadTree();
   ~QuadTree();
   void Load(const Point* points_begin, const Point* points_end);
+  int32_t Search(const Rect rect, const int32_t count, Point* out_points);
 };
 
 class QuadNode 
@@ -30,6 +31,7 @@ class QuadNode
 private:
   static const int capacity = 20; // Limit 255
   uint8_t size;
+  int32_t minRank;
   Point* points;
   QuadNode* child[4];
   Rect bounds;
@@ -39,4 +41,6 @@ public:
   ~QuadNode();
   void Insert(Point);
   int Count();
+  void Sort();
+  std::vector<Point> Search(const Rect rect, const int32_t count);
 };
