@@ -1,7 +1,5 @@
 #pragma once
 
-#define EMPTY -1
-
 enum Quadrant
 {
   BOTTOMLEFT  = 0,
@@ -14,42 +12,31 @@ enum Quadrant
 };
 
 class QuadNode;
-class QuadInternal;
 
 class QuadTree
 {
 private:
-  QuadInternal* root;
+  QuadNode* root;
   Rect extents;
 
 public:
-  QuadTree(const Point* points_begin, const Point* points_end);
+  QuadTree();
   ~QuadTree();
+  void Load(const Point* points_begin, const Point* points_end);
 };
 
 class QuadNode 
 {
-public:
-  //virtual ~QuadNode() = 0;
-};
-
-class QuadLeaf : public QuadNode
-{
-  static int allocs;
-public:
-  Point point;
-  QuadLeaf(Point);
-};
-
-class QuadInternal : public QuadNode
-{
-  static int allocs;
+private:
+  static const int capacity = 20; // Limit 255
+  uint8_t size;
+  Point* points;
   QuadNode* child[4];
   Rect bounds;
-  float cx, cy;
 
 public:
-  QuadInternal(Rect);
-  ~QuadInternal();
+  QuadNode(Rect);
+  ~QuadNode();
   void Insert(Point);
+  int Count();
 };
