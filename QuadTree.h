@@ -30,9 +30,9 @@ class QuadNode
 {
 private:
   static const int capacity = 20; // Limit 255
-  uint8_t size;
   int32_t minRank;
-  Point* points;
+  bool isLeaf;
+  std::vector<Point>* points;
   QuadNode* child[4];
   Rect bounds;
 

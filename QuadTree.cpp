@@ -1,6 +1,7 @@
 #include <memory>
 #include <vector>
 #include <algorithm>
+#include <iterator>
 #include <cassert>
 #include "point_search.h"
 #include "QuadTree.h"
@@ -34,6 +35,8 @@ void QuadTree::Load(const Point* points_begin, const Point* points_end)
     root->Insert(pt);
   });
 
+  root->Sort();
+
   volatile int foo = 42;
 }
 
@@ -44,15 +47,16 @@ QuadTree::~QuadTree()
 
 int32_t QuadTree::Search(const Rect rect, const int32_t count, Point* out_points)
 {
-  return root->Search(rect, count, out_points);
+  return 0;//root->Search(rect, count, out_points);
 }
 
 
 QuadNode::QuadNode(Rect inBounds)
 {
+  isLeaf = true;
   bounds = inBounds;
-  size = 0;
-  points = new Point[capacity];
+  points = new std::vector<Point>();
+  points->reserve(capacity);
 }
 
 QuadNode::~QuadNode()
@@ -73,23 +77,18 @@ void QuadNode::Insert(Point pt)
   float cx = (bounds.lx + bounds.hx) * 0.5f;
   float cy = (bounds.ly + bounds.hy) * 0.5f;
 
-  if (points) // Only leaf nodes have points
+  if (isLeaf)
   {
-    if (size < capacity)
+    if (points->size() < capacity)
     {
-      points[size++] = pt;
+      points->push_back(pt);
     }
     else
     {
-      child[0] = new QuadNode(Rect{ bounds.lx, bounds.ly, cx, cy });    // BL
-      child[1] = new QuadNode(Rect{ cx, bounds.ly, bounds.hx, cy });    // BR
-      child[2] = new QuadNode(Rect{ bounds.lx, cy, cx, bounds.hy });    // TL
-      child[3] = new QuadNode(Rect{ cx, cy, bounds.hx, bounds.hy });    // TR
-      auto tempPoints = points;
-      points = nullptr;
-      for (int i = 0; i < size; i++)
-        Insert(tempPoints[i]);
-      delete tempPoints;
+      isLeaf = false;
+      for (auto pt : *points)
+        Insert(pt);
+      points->clear();
     }
   }
   else
@@ -106,6 +105,25 @@ void QuadNode::Insert(Point pt)
       else            quad = BOTTOMLEFT;
     }
 
+    // Allocate the child quad if necessary
+    if (child[quad] == nullptr)
+    {
+      switch (quad)
+      {
+      case BOTTOMLEFT:
+        child[0] = new QuadNode(Rect{ bounds.lx, bounds.ly, cx, cy });
+        break;
+      case BOTTOMRIGHT:
+        child[1] = new QuadNode(Rect{ cx, bounds.ly, bounds.hx, cy });
+        break;
+      case TOPLEFT:
+        child[2] = new QuadNode(Rect{ bounds.lx, cy, cx, bounds.hy });
+        break;
+      case TOPRIGHT:
+        child[3] = new QuadNode(Rect{ cx, cy, bounds.hx, bounds.hy });
+        break;
+      }
+    }
     child[quad]->Insert(pt);
   }
 
@@ -113,24 +131,58 @@ void QuadNode::Insert(Point pt)
 
 int QuadNode::Count()
 {
-  if (points)
+  if (isLeaf)
     return 1;
   
-  return 1 +
-    child[0]->Count() + 
-    child[1]->Count() +
-    child[2]->Count() +
-    child[3]->Count();
+  int count = 1;  // One for self
+  for (int i = 0; i < 4; i++)
+  {
+    if (child[i])
+      count += child[i]->Count();
+  }
+
+  return count;
 }
 
 void QuadNode::Sort()
 {
+  if (!isLeaf)
+  {
+    int count = 0;
+    for (int i = 0; i < 4; i++)
+    {
+      if (child[i])
+      {
+        child[i]->Sort();
+        count++;
+      }
+    }
 
+    if (count > 1)
+    {
+      for (int i = 0; i < 4; i++)
+      {
+        if (child[i])
+        {
+          int nCopy = std::min(capacity, (int)child[i]->points->size());
+          std::copy(child[i]->points->begin(), child[i]->points->begin() + nCopy, std::back_inserter(*points));
+        }
+      }
+    }
+  }
+
+  std::sort(points->begin(), points->end(), [](Point a, Point b) { return a.rank < b.rank; });
+
+  if (!isLeaf)
+  {
+    points->resize(capacity);
+    points->shrink_to_fit();
+  }
 }
 
 std::vector<Point> QuadNode::Search(const Rect rect, const int32_t count)
 {
-  if (points)
+  if (isLeaf)
   {
 
   }
@@ -138,4 +190,6 @@ std::vector<Point> QuadNode::Search(const Rect rect, const int32_t count)
   {
 
   }
+
+  return std::vector<Point>();
 }
