@@ -54,6 +54,7 @@ QuadTree::~QuadTree()
 int32_t QuadTree::Search(const Rect* rect, const int32_t count, Point* out_points)
 {
   std::vector<int32_t> results;
+  results.reserve(4 * count);
   root->Search(rect, count, results);
   std::sort_heap(results.begin(), results.end());
 
@@ -70,7 +71,7 @@ QuadNode::QuadNode(Point* inAllPoints, Rect inBounds)
   isLeaf = true;
   allPoints = inAllPoints;
   bounds = inBounds;
-  points.reserve(capacity);
+  points.reserve(leaf_capacity);
 }
 
 QuadNode::~QuadNode()
@@ -95,7 +96,7 @@ void QuadNode::Insert(Point pt, int depth /* = 0 */)
 
   if (isLeaf)
   {
-    if (points.size() < capacity ||
+    if (points.size() < leaf_capacity ||
         depth >= max_depth)   // Capacity limit is waived, to prevent stack overflows.  (Tricky, tricky..)
     {
       points.push_back(pt.rank);
@@ -197,7 +198,11 @@ void QuadNode::Sort()
     }
   }
 
-  if (!isLeaf)
+  if (isLeaf)
+  {
+    std::sort(points.begin(), points.end());
+  }
+  else
   {
     int count = 0;
     for (int i = 0; i < 4; i++)
@@ -215,20 +220,17 @@ void QuadNode::Sort()
       {
         if (child[i])
         {
-          int nCopy = std::min(capacity, (int)child[i]->points.size());
+          int nCopy = std::min(branch_capacity, (int)child[i]->points.size());
           std::copy(child[i]->points.begin(), child[i]->points.begin() + nCopy, std::back_inserter(points));
         }
       }
     }
+
+    std::sort(points.begin(), points.end());
+    points.resize(branch_capacity);
   }
 
-  std::sort(points.begin(), points.end());
-
-  if (!isLeaf)
-  {
-    points.resize(capacity);
-    points.shrink_to_fit();
-  }
+  points.shrink_to_fit();
 }
 
 void QuadNode::Search(const Rect* rect, const int32_t count, std::vector<int32_t>& results)
@@ -263,10 +265,11 @@ void QuadNode::Search(const Rect* rect, const int32_t count, std::vector<int32_t
     int passed = 0;
     for (auto pt : points)
     {
-      if (allPoints[pt].x >= rect->lx &&
-          allPoints[pt].x <= rect->hx &&
-          allPoints[pt].y >= rect->ly &&
-          allPoints[pt].y <= rect->hy)
+      float x = allPoints[pt].x, y = allPoints[pt].y;
+      if (x >= rect->lx &&
+          x <= rect->hx &&
+          y >= rect->ly &&
+          y <= rect->hy)
       {
         results.push_back(pt);
         std::push_heap(results.begin(), results.end());

@@ -31,8 +31,9 @@ public:
 class QuadNode 
 {
 private:
-  static const int capacity  = 20; // Limit 255
-  static const int max_depth = 255;
+  static const int leaf_capacity    = 20;
+  static const int branch_capacity  = 20;
+  static const int max_depth        = 255;
 
   Point* allPoints;
   bool isLeaf;
