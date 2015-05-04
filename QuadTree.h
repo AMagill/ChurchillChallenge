@@ -28,14 +28,6 @@ public:
   int32_t Search(const Rect* rect, const int32_t count, Point* out_points);
 };
 
-enum SearchState
-{
-  SEARCH_NONE,
-  SEARCH_SOME,
-  SEARCH_ALL,
-  SEARCH_RECURSE,
-};
-
 class QuadNode 
 {
 private:
@@ -47,10 +39,6 @@ private:
   std::vector<int32_t> points;
   QuadNode* child[4];
   Rect bounds;
-  
-  std::vector<int32_t>::const_iterator searchIter;
-  int32_t      searchVal;
-  SearchState  searchState;
 
 public:
   QuadNode(Point*, Rect);
