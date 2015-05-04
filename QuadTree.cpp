@@ -1,3 +1,7 @@
+#ifndef _DEBUG
+#define NDEBUG  // To disable assert()
+#endif
+
 #include <memory>
 #include <vector>
 #include <algorithm>
@@ -48,7 +52,7 @@ QuadTree::~QuadTree()
 int32_t QuadTree::Search(const Rect* rect, const int32_t count, Point* out_points)
 {
   std::vector<int32_t> results;
-  results.reserve(4 * count);
+  results.reserve(count + 1);
   root->Search(*rect, count, results);
   std::sort_heap(results.begin(), results.end());
 
@@ -78,10 +82,10 @@ QuadNode::~QuadNode()
 
 void QuadNode::Insert(Point pt, int depth /* = 0 */)
 {
-/*  assert(pt.x >= bounds.lx);
+  assert(pt.x >= bounds.lx);
   assert(pt.x <= bounds.hx);
   assert(pt.y >= bounds.ly);
-  assert(pt.y <= bounds.hy);*/
+  assert(pt.y <= bounds.hy);
   
   float cx = (bounds.lx + bounds.hx) * 0.5f;
   float cy = (bounds.ly + bounds.hy) * 0.5f;
@@ -141,15 +145,14 @@ void QuadNode::Insert(Point pt, int depth /* = 0 */)
     }
     child[quad]->Insert(pt, depth+1);
   }
-
 }
 
 int QuadNode::Count()
 {
   if (isLeaf)
-    return (int)points.size();
+    return 1;
   
-  int count = 0;
+  int count = 1;
   for (int i = 0; i < 4; i++)
   {
     if (child[i])
