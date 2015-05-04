@@ -31,7 +31,9 @@ public:
 class QuadNode 
 {
 private:
-  static const int capacity = 20; // Limit 255
+  static const int capacity  = 20; // Limit 255
+  static const int max_depth = 255;
+
   Point* allPoints;
   bool isLeaf;
   std::vector<int32_t> points;
@@ -41,7 +43,7 @@ private:
 public:
   QuadNode(Point*, Rect);
   ~QuadNode();
-  void Insert(Point);
+  void Insert(Point, int=0);
   int Count();
   void Sort();
   void Search(const Rect* rect, const int32_t count, std::vector<int32_t>& results);

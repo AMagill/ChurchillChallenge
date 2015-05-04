@@ -81,7 +81,7 @@ QuadNode::~QuadNode()
   delete child[3];
 }
 
-void QuadNode::Insert(Point pt)
+void QuadNode::Insert(Point pt, int depth /* = 0 */)
 {
 /*  assert(pt.x >= bounds.lx);
   assert(pt.x <= bounds.hx);
@@ -91,9 +91,12 @@ void QuadNode::Insert(Point pt)
   float cx = (bounds.lx + bounds.hx) * 0.5f;
   float cy = (bounds.ly + bounds.hy) * 0.5f;
 
+  volatile auto foo = pt;
+
   if (isLeaf)
   {
-    if (points.size() < capacity)
+    if (points.size() < capacity ||
+        depth >= max_depth)   // Capacity limit is waived, to prevent stack overflows.  (Tricky, tricky..)
     {
       points.push_back(pt.rank);
     }
@@ -102,10 +105,10 @@ void QuadNode::Insert(Point pt)
       // Split the leaf, reinserting its contents into its children
       isLeaf = false;
       for (auto movePt : points)
-        Insert(allPoints[movePt]);
+        Insert(allPoints[movePt], depth);
       points.clear();
       // Don't forget this one
-      Insert(pt);
+      Insert(pt, depth);
     }
   }
   else
@@ -141,7 +144,7 @@ void QuadNode::Insert(Point pt)
         break;
       }
     }
-    child[quad]->Insert(pt);
+    child[quad]->Insert(pt, depth+1);
   }
 
 }
@@ -149,7 +152,7 @@ void QuadNode::Insert(Point pt)
 int QuadNode::Count()
 {
   if (isLeaf)
-    return points.size();
+    return (int)points.size();
   
   int count = 0;
   for (int i = 0; i < 4; i++)
