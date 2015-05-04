@@ -90,8 +90,6 @@ void QuadNode::Insert(Point pt, int depth /* = 0 */)
   float cx = (bounds.lx + bounds.hx) * 0.5f;
   float cy = (bounds.ly + bounds.hy) * 0.5f;
 
-  volatile auto foo = pt;
-
   if (isLeaf)
   {
     if (points.size() < leaf_capacity ||
