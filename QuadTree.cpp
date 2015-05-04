@@ -7,12 +7,7 @@
 #include "QuadTree.h"
 
 
-QuadTree::QuadTree()
-{
-
-}
-
-void QuadTree::Load(const Point* points_begin, const Point* points_end)
+QuadTree::QuadTree(const Point* points_begin, const Point* points_end)
 {
   // Allocate storage for all the points
   nAllPoints = (int)(points_end - points_begin);
@@ -20,8 +15,8 @@ void QuadTree::Load(const Point* points_begin, const Point* points_end)
 
   // The bounds always come out to +/-1E10, presumably to frustrate attempts at finding a tight bounding box.
   // Still, best not to assume that.  Sparse quadtrees don't mind much anyway.  :)
-  Rect bounds{ 0,0,0,0 };
-  
+  Rect bounds{ FLT_MAX,FLT_MAX,FLT_MIN,FLT_MIN };
+
   // Save points in order.  The rank makes a convenient indexer!
   for (auto pt = points_begin; pt < points_end; pt++)
   {
@@ -34,11 +29,9 @@ void QuadTree::Load(const Point* points_begin, const Point* points_end)
     if (pt->y > bounds.hy) bounds.hy = pt->y;
   };
 
-  // Initialize the root node
+  // Initialize the root node and insert everything
   root = new QuadNode(allPoints, bounds);
-
-  // Then insert everything
-  std::for_each (points_begin, points_end, [&](const Point pt)
+  std::for_each(points_begin, points_end, [&](const Point pt)
   {
     root->Insert(pt);
   });
@@ -49,13 +42,14 @@ void QuadTree::Load(const Point* points_begin, const Point* points_end)
 QuadTree::~QuadTree()
 {
   delete root;
+  delete allPoints;
 }
 
 int32_t QuadTree::Search(const Rect* rect, const int32_t count, Point* out_points)
 {
   std::vector<int32_t> results;
   results.reserve(4 * count);
-  root->Search(rect, count, results);
+  root->Search(*rect, count, results);
   std::sort_heap(results.begin(), results.end());
 
   int nPoints = std::min((int)results.size(), count);
@@ -204,25 +198,13 @@ void QuadNode::Sort()
   }
   else
   {
-    int count = 0;
     for (int i = 0; i < 4; i++)
     {
       if (child[i])
       {
         child[i]->Sort();
-        count++;
-      }
-    }
-
-    if (count > 1)
-    {
-      for (int i = 0; i < 4; i++)
-      {
-        if (child[i])
-        {
-          int nCopy = std::min(branch_capacity, (int)child[i]->points.size());
-          std::copy(child[i]->points.begin(), child[i]->points.begin() + nCopy, std::back_inserter(points));
-        }
+        int nCopy = std::min(branch_capacity, (int)child[i]->points.size());
+        std::copy(child[i]->points.begin(), child[i]->points.begin() + nCopy, std::back_inserter(points));
       }
     }
 
@@ -233,18 +215,18 @@ void QuadNode::Sort()
   points.shrink_to_fit();
 }
 
-void QuadNode::Search(const Rect* rect, const int32_t count, std::vector<int32_t>& results)
+void QuadNode::Search(const Rect rect, const int32_t count, std::vector<int32_t>& results)
 {
-  if (rect->lx > bounds.hx ||
-      rect->hx < bounds.lx ||
-      rect->ly > bounds.hy ||
-      rect->hy < bounds.ly)
+  if (rect.lx > bounds.hx ||
+      rect.hx < bounds.lx ||
+      rect.ly > bounds.hy ||
+      rect.hy < bounds.ly)
     return;    // No intersection; return nothing
   
-  if (rect->lx < bounds.lx &&
-      rect->hx > bounds.hx &&
-      rect->ly < bounds.ly &&
-      rect->hy > bounds.hy)
+  if (rect.lx < bounds.lx &&
+      rect.hx > bounds.hx &&
+      rect.ly < bounds.ly &&
+      rect.hy > bounds.hy)
   { // Fully enclosed; return everything
     for (auto pt : points)
     {
@@ -252,8 +234,11 @@ void QuadNode::Search(const Rect* rect, const int32_t count, std::vector<int32_t
       std::push_heap(results.begin(), results.end());
       if (results.size() > count)
       {
+        int popped = results[0];
         std::pop_heap(results.begin(), results.end());
         results.pop_back();
+        if (popped == pt)
+          break;
       }
     }
     return;
@@ -265,18 +250,20 @@ void QuadNode::Search(const Rect* rect, const int32_t count, std::vector<int32_t
     int passed = 0;
     for (auto pt : points)
     {
-      float x = allPoints[pt].x, y = allPoints[pt].y;
-      if (x >= rect->lx &&
-          x <= rect->hx &&
-          y >= rect->ly &&
-          y <= rect->hy)
+      if (allPoints[pt].x >= rect.lx &&
+          allPoints[pt].x <= rect.hx &&
+          allPoints[pt].y >= rect.ly &&
+          allPoints[pt].y <= rect.hy)
       {
         results.push_back(pt);
         std::push_heap(results.begin(), results.end());
         if (results.size() > count)
         {
+          int popped = results[0];
           std::pop_heap(results.begin(), results.end());
           results.pop_back();
+          if (popped == pt)
+            break;
         }
 
         passed++;

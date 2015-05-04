@@ -22,9 +22,8 @@ private:
   int nAllPoints;
 
 public:
-  QuadTree();
+  QuadTree(const Point* points_begin, const Point* points_end);
   ~QuadTree();
-  void Load(const Point* points_begin, const Point* points_end);
   int32_t Search(const Rect* rect, const int32_t count, Point* out_points);
 };
 
@@ -47,7 +46,5 @@ public:
   void Insert(Point, int=0);
   int Count();
   void Sort();
-  void Search(const Rect* rect, const int32_t count, std::vector<int32_t>& results);
-  int32_t SearchReset(const Rect* rect);
-  int32_t SearchNext(const Rect* rect);
+  void Search(const Rect rect, const int32_t count, std::vector<int32_t>& results);
 };

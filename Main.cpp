@@ -21,8 +21,7 @@ EXPORT SearchContext* __stdcall create(const Point* points_begin, const Point* p
     return nullptr;
   
   SearchContext* newContext = new SearchContext();
-  newContext->tree = new QuadTree();
-  newContext->tree->Load(points_begin, points_end);
+  newContext->tree = new QuadTree(points_begin, points_end);
 
   return newContext;
 }
