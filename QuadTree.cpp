@@ -55,13 +55,29 @@ int32_t QuadTree::Search(const Rect* rect, const int32_t count, Point* out_point
 {
   std::vector<int32_t> results;
   root->Search(rect, count, results);
-  std::sort(results.begin(), results.end());
+  std::sort_heap(results.begin(), results.end());
 
   int nPoints = std::min((int)results.size(), count);
   for (int i = 0; i < nPoints; i++)
     out_points[i] = allPoints[results[i]];
-
+  
   return nPoints;
+  
+  /*
+  // Iterative search
+  int i;
+  root->SearchReset(rect);
+  for (i = 0; i < count; i++)
+  {
+    int next = root->SearchNext(rect);
+    if (next == INT32_MAX)
+      break;
+
+    out_points[i] = allPoints[next];
+  }
+
+  return i;
+  */
 }
 
 
@@ -244,7 +260,16 @@ void QuadNode::Search(const Rect* rect, const int32_t count, std::vector<int32_t
       rect->ly < bounds.ly &&
       rect->hy > bounds.hy)
   { // Fully enclosed; return everything
-    std::copy(points.begin(), points.end(), std::back_inserter(results));
+    for (auto pt : points)
+    {
+      results.push_back(pt);
+      std::push_heap(results.begin(), results.end());
+      if (results.size() > count)
+      {
+        std::pop_heap(results.begin(), results.end());
+        results.pop_back();
+      }
+    }
     return;
   }
   
@@ -260,6 +285,13 @@ void QuadNode::Search(const Rect* rect, const int32_t count, std::vector<int32_t
           allPoints[pt].y <= rect->hy)
       {
         results.push_back(pt);
+        std::push_heap(results.begin(), results.end());
+        if (results.size() > count)
+        {
+          std::pop_heap(results.begin(), results.end());
+          results.pop_back();
+        }
+
         passed++;
         if (passed >= count)
           break;
@@ -275,4 +307,105 @@ void QuadNode::Search(const Rect* rect, const int32_t count, std::vector<int32_t
     }
   }
 
+}
+
+int32_t QuadNode::SearchReset(const Rect* rect)
+{
+  if (rect->lx > bounds.hx ||
+      rect->hx < bounds.lx ||
+      rect->ly > bounds.hy ||
+      rect->hy < bounds.ly)
+  {
+    searchState = SEARCH_NONE;
+    searchVal   = INT32_MAX;
+    return searchVal;
+  }
+
+  if (!isLeaf)
+  {
+    searchState = SEARCH_RECURSE;
+    searchVal   = INT32_MAX;
+    for (int i = 0; i < 4; i++)
+    {
+      if (child[i])
+        searchVal = std::min(searchVal, child[i]->SearchReset(rect));
+    }
+    return searchVal;
+  }
+
+  searchIter = points.cbegin();
+
+  if (rect->lx < bounds.lx &&
+      rect->hx > bounds.hx &&
+      rect->ly < bounds.ly &&
+      rect->hy > bounds.hy)
+  {
+    searchState = SEARCH_ALL;
+    searchVal   = *searchIter;
+    return searchVal;
+  }
+
+  searchState = SEARCH_SOME;
+  searchVal   = INT32_MAX;
+  while (searchIter != points.cend())
+  {
+    if (allPoints[*searchIter].x >= rect->lx &&
+        allPoints[*searchIter].x <= rect->hx &&
+        allPoints[*searchIter].y >= rect->ly &&
+        allPoints[*searchIter].y <= rect->hy)
+    {
+      searchVal = *searchIter;
+      break;
+    }
+    searchIter++;
+  }
+  return searchVal;
+}
+
+int32_t QuadNode::SearchNext(const Rect* rect)
+{
+  int result = searchVal;
+
+  switch (searchState)
+  {
+  case SEARCH_NONE:
+    return INT32_MAX;
+  case SEARCH_ALL:
+    if (++searchIter == points.cend())
+      searchVal = INT32_MAX;
+    else
+      searchVal = *searchIter;
+    break;
+  case SEARCH_SOME:
+    searchVal = INT32_MAX;
+    while (++searchIter != points.cend())
+    {
+      if (allPoints[*searchIter].x >= rect->lx &&
+          allPoints[*searchIter].x <= rect->hx &&
+          allPoints[*searchIter].y >= rect->ly &&
+          allPoints[*searchIter].y <= rect->hy)
+      {
+        searchVal = *searchIter;
+        break;
+      }
+    }
+    break;
+  case SEARCH_RECURSE:
+    if (result == INT32_MAX)
+      return result;
+    for (int i = 0; i < 4; i++)
+    {
+      if (child[i] && child[i]->searchVal == searchVal)
+        child[i]->SearchNext(rect);
+    }
+    searchVal = INT32_MAX;
+    for (int i = 0; i < 4; i++)
+    {
+      if (child[i])
+        searchVal = std::min(searchVal, child[i]->searchVal);
+    }
+    break;
+  }
+
+  return result;
 }

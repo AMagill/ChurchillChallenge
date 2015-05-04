@@ -7,3 +7,5 @@
 *.txt
 /Release/
 /.vs/
+*.vsp
+*.psess
