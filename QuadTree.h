@@ -18,29 +18,31 @@ class QuadTree
 private:
   QuadNode* root;
   Rect extents;
+  Point* allPoints;
+  int nAllPoints;
 
 public:
   QuadTree();
   ~QuadTree();
   void Load(const Point* points_begin, const Point* points_end);
-  int32_t Search(const Rect rect, const int32_t count, Point* out_points);
+  int32_t Search(const Rect* rect, const int32_t count, Point* out_points);
 };
 
 class QuadNode 
 {
 private:
   static const int capacity = 20; // Limit 255
-  int32_t minRank;
+  Point* allPoints;
   bool isLeaf;
-  std::vector<Point>* points;
+  std::vector<int32_t> points;
   QuadNode* child[4];
   Rect bounds;
 
 public:
-  QuadNode(Rect);
+  QuadNode(Point*, Rect);
   ~QuadNode();
   void Insert(Point);
   int Count();
   void Sort();
-  std::vector<Point> Search(const Rect rect, const int32_t count);
+  void Search(const Rect* rect, const int32_t count, std::vector<int32_t>& results);
 };

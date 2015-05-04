@@ -15,7 +15,7 @@ struct SearchContext
 "points_begin" points to the first element, and "points_end" points to one past the last element. The input points are
 only guaranteed to be valid for the duration of the call. Return a pointer to the context that can be used for
 consecutive searches on the data. */
-EXPORT SearchContext* create(const Point* points_begin, const Point* points_end)
+EXPORT SearchContext* __stdcall create(const Point* points_begin, const Point* points_end)
 {
   if (points_begin == nullptr || points_end == nullptr) 
     return nullptr;
@@ -30,8 +30,10 @@ EXPORT SearchContext* create(const Point* points_begin, const Point* points_end)
 /* Search for "count" points with the smallest ranks inside "rect" and copy them ordered by smallest rank first in
 "out_points". Return the number of points copied. "out_points" points to a buffer owned by the caller that
 can hold "count" number of Points. */
-EXPORT int32_t search(SearchContext* sc, const Rect rect, const int32_t count, Point* out_points)
+EXPORT int32_t __stdcall search(SearchContext* sc, const Rect* rect, const int32_t count, Point* out_points)
 {
+  // The provided header is wrong!  rect is passed as a pointer, not by value!
+
   if (sc == nullptr)
     return 0;
 
@@ -39,7 +41,7 @@ EXPORT int32_t search(SearchContext* sc, const Rect rect, const int32_t count, P
 }
 
 /* Release the resources associated with the context. Return nullptr if successful, "sc" otherwise. */
-EXPORT SearchContext* destroy(SearchContext* sc)
+EXPORT SearchContext* __stdcall destroy(SearchContext* sc)
 {
   if (sc)
   {
